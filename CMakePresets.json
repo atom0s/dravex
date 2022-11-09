@@ -31,6 +31,14 @@
             }
         },
         {
+            "name": "x64",
+            "hidden": true,
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            }
+        },
+        {
             "name": "Debug",
             "hidden": true,
             "cacheVariables": {
@@ -55,6 +63,18 @@
             "displayName": "Release (x86)",
             "description": "Release build for Windows (x86).",
             "inherits": ["win-ninja", "x86", "Release"]
+        },
+        {
+            "name": "x64-debug-win",
+            "displayName": "Debug (x64)",
+            "description": "Debug build for Windows (x64).",
+            "inherits": ["win-ninja", "x64", "Debug"]
+        },
+        {
+            "name": "x64-release-win",
+            "displayName": "Release (x64)",
+            "description": "Release build for Windows (x64).",
+            "inherits": ["win-ninja", "x64", "Release"]
         }
     ],
     "buildPresets": []
