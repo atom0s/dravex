@@ -115,7 +115,9 @@ set(dravex_src
     "src/window.hpp"
 
     "src/assets/asset.hpp"
+    "src/assets/asset_text.hpp"
     "src/assets/asset_texture.hpp"
+    "src/assets/asset_unknown.hpp"
 
     "src/package/package.cpp"
     "src/package/package.hpp"
