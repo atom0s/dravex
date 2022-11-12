@@ -5,7 +5,7 @@
 
 <div align="center">
     <a href="https://discord.gg/UmXNvjq"><img src="https://img.shields.io/discord/704822642846466096.svg?style=for-the-badge" alt="Discord server" /></a>
-    <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge" alt="license" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge" alt="license" /></a>
     <br/>
 </div>
 
@@ -28,13 +28,16 @@ _**Note:** dravex supports these two main client versions, however, support for 
   * **Patreon Sponsor:** https://patreon.com/atom0s
   * **PayPal Donation:** https://www.paypal.me/atom0s
 
-# Credits
+## Credits
 
 **dravex** is coded in C++ (making use of newer C++17/20 features) by @atom0s
 
 The following tools are used to make **dravex**:
 
   * **Visual Studio Code (Insiders)**: https://code.visualstudio.com/insiders/
+    * **C/C++ Extension**
+    * **CMake Extension**
+    * **CMake Tools Extension**
   * **CMake**: https://cmake.org/
   * **vcpkg**: https://vcpkg.io/en/index.html
 
@@ -49,6 +52,30 @@ Credits to the following for additional resources:
   * **Agave Font**: https://github.com/blobject/agave
   * **FontAwesome**: https://fontawesome.com/ _(For their icon fonts.)_
   * **max.icons**: Icon used for the project.
+
+## Building dravex
+
+**dravex** is built using **VSCode**, **CMake** and **vcpkg** as the main tooling. For third-party libraries that are maintained outside of this repository, **vcpkg** is generally used. This includes things such as `zlib`.
+
+You will need to install the various requirements for this project with the following commands:
+
+```
+vcpkg install zlib
+```
+
+Because of issues with some versions of Windows, Powershell and vcpkg, you may need to adjust/tweak paths for your system.
+
+You can find overrides for working with zlib and vcpkg inside of the `CMakeLists.txt` file near the top of the file:
+
+```
+# Define the toolchain to use vcpkg..
+set(CMAKE_TOOLCHAIN_FILE "Z:/SourceCode/deps/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+set(Z_VCPKG_BUILTIN_POWERSHELL_PATH "C:/Program Files/Powershell/7/pwsh.exe")
+```
+
+_This is currently setup to match my personal build environment and system setup due to said bugs._
+
+Once you have all requirements and such installed and configured, you can use the VSCode CMake toolbar at the bottom of the window to select the desired build, presets, and targets to build **dravex**.
 
 ## License
 
