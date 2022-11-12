@@ -56,6 +56,111 @@ void reset_asset_variables(void)
 }
 
 /**
+ * Extracts the currently selected asset to disk.
+ */
+void extract_asset(void)
+{
+    // Obtain the selected asset entry information..
+    const auto& entry = dravex::package::instance().get_entry(g_selected_asset_index_);
+    if (entry == nullptr)
+        return;
+
+    const auto& data = dravex::package::instance().get_entry_data(g_selected_asset_index_);
+    const auto& name = dravex::package::instance().get_string(entry->string_offset_);
+    auto ext         = dravex::package::instance().get_extension(entry->file_type_);
+
+    // Prepare the default file name..
+    char file_name[MAX_PATH]{};
+    ::sprintf_s(file_name, MAX_PATH, "%s%s", name == nullptr ? "(unknown)" : name, (ext == nullptr || ::strlen(ext) == 0) ? ".raw" : ext);
+
+    // Display the save as dialog..
+    OPENFILENAMEA ofn{};
+    ofn.lStructSize     = sizeof(OPENFILENAMEA);
+    ofn.hwndOwner       = g_window->get_hwnd();
+    ofn.hInstance       = ::GetModuleHandleA(nullptr);
+    ofn.lpstrFilter     = nullptr;
+    ofn.nFilterIndex    = 0;
+    ofn.lpstrFile       = file_name;
+    ofn.nMaxFile        = MAX_PATH;
+    ofn.lpstrFileTitle  = nullptr;
+    ofn.nMaxFileTitle   = 0;
+    ofn.lpstrInitialDir = nullptr;
+    ofn.Flags           = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+    ofn.lpstrDefExt     = (ext == nullptr || ::strlen(ext) == 0) ? "raw" : ++ext;
+
+    if (::GetSaveFileNameA(&ofn))
+    {
+        // Save the asset..
+        FILE* f = nullptr;
+        if (::fopen_s(&f, file_name, "wb") == ERROR_SUCCESS)
+        {
+            ::fwrite(data.data(), data.size(), 1, f);
+            ::fclose(f);
+        }
+    }
+}
+
+/**
+ * Extracts all assets to disk.
+ */
+void extract_assets(void)
+{
+    char file_path[MAX_PATH]{};
+
+    BROWSEINFOA binfo{};
+    binfo.hwndOwner      = g_window->get_hwnd();
+    binfo.pszDisplayName = file_path;
+    binfo.iImage         = -1;
+
+    // Display the folder selection dialog..
+    const auto ret = ::SHBrowseForFolderA(&binfo);
+    if (ret == nullptr)
+        return;
+
+    // Obtain the selected export path..
+    ::SHGetPathFromIDListA(ret, file_path);
+    ::CoTaskMemFree(ret);
+
+    // Prepare the root path..
+    std::error_code ec{};
+    std::filesystem::path root = file_path;
+
+    // Ensure the path exists..
+    if (!std::filesystem::exists(root, ec))
+        std::filesystem::create_directories(root, ec);
+
+    // Extract each asset..
+    const auto entry_count = dravex::package::instance().get_entry_count();
+    for (auto x = 0; x < entry_count; x++)
+    {
+        // Obtain the asset entry information..
+        const auto& entry = dravex::package::instance().get_entry(x);
+        if (entry == nullptr)
+            continue;
+
+        const auto& data = dravex::package::instance().get_entry_data(x);
+        const auto& name = dravex::package::instance().get_string(entry->string_offset_);
+        auto ext         = dravex::package::instance().get_extension(entry->file_type_);
+
+        // Prepare the full path to the file..
+        auto fpath = root;
+        fpath /= std::format("{}{}", name, ext);
+
+        // Ensure the path to the file exists..
+        if (!std::filesystem::exists(fpath.parent_path(), ec))
+            std::filesystem::create_directories(fpath.parent_path(), ec);
+
+        // Save the asset..
+        FILE* f = nullptr;
+        if (::fopen_s(&f, fpath.string().c_str(), "wb") == ERROR_SUCCESS)
+        {
+            ::fwrite(data.data(), data.size(), 1, f);
+            ::fclose(f);
+        }
+    }
+}
+
+/**
  * Loads an asset from its file data to be viewed.
  *
  * @param {uint32_t} file_type - The file type of the asset being loaded.
@@ -119,9 +224,9 @@ void render_view_assets(void)
     {
         for (auto x = clipper.DisplayStart; x < clipper.DisplayEnd; x++)
         {
-            const auto& e   = dravex::package::instance().get_entry(x);
-            const auto& s   = dravex::package::instance().get_string(e.string_offset_);
-            const auto& ext = dravex::package::get_extension(e.file_type_);
+            const auto e    = dravex::package::instance().get_entry(x);
+            const auto& s   = dravex::package::instance().get_string(e->string_offset_);
+            const auto& ext = dravex::package::get_extension(e->file_type_);
 
             if (ImGui::Selectable(std::format("{}{}##entry_{}", s == nullptr ? "(unknown)" : s, ext, x).c_str(), x == g_selected_asset_index_))
             {
@@ -131,7 +236,7 @@ void render_view_assets(void)
 
                     g_selected_asset_index_ = x;
 
-                    load_asset(e.file_type_, dravex::package::instance().get_entry_data(x));
+                    load_asset(e->file_type_, dravex::package::instance().get_entry_data(x));
                 }
             }
 
@@ -140,14 +245,14 @@ void render_view_assets(void)
                 ImGui::BeginTooltip();
                 ImGui::Text(std::format("{}{}", s == nullptr ? "(unknown)" : s, ext).c_str());
                 ImGui::Separator();
-                ImGui::Text(std::format("       Compressed : {}", e.is_compressed_ ? "True" : "False").c_str());
-                ImGui::Text(std::format("  Size Compressed : {}", e.size_compressed_).c_str());
-                ImGui::Text(std::format("Size Uncompressed : {}", e.size_uncompressed_).c_str());
-                ImGui::Text(std::format("         Checksum : {:08X} (Adler32)", e.checksum_).c_str());
+                ImGui::Text(std::format("       Compressed : {}", e->is_compressed_ ? "True" : "False").c_str());
+                ImGui::Text(std::format("  Size Compressed : {}", e->size_compressed_).c_str());
+                ImGui::Text(std::format("Size Uncompressed : {}", e->size_uncompressed_).c_str());
+                ImGui::Text(std::format("         Checksum : {:08X} (Adler32)", e->checksum_).c_str());
 
-                if (e.is_compressed_)
+                if (e->is_compressed_)
                 {
-                    const auto ratio = (1.0f - (static_cast<float>(e.size_compressed_) / static_cast<float>(e.size_uncompressed_))) * 100.0f;
+                    const auto ratio = (1.0f - (static_cast<float>(e->size_compressed_) / static_cast<float>(e->size_uncompressed_))) * 100.0f;
                     ImGui::NewLine();
                     ImGui::Text(std::format("Compression Ratio : {:.2f}%%", ratio).c_str());
                 }
@@ -246,8 +351,14 @@ void __stdcall on_update(void)
                     dravex::package::instance().close();
                 }
                 ImGui::Separator();
-                ImGui::MenuItem(ICON_FA_ANGLE_DOWN "Extract Selected Asset");
-                ImGui::MenuItem(ICON_FA_ANGLES_DOWN "Extract All Assets");
+                if (ImGui::MenuItem(ICON_FA_ANGLE_DOWN "Extract Selected Asset"))
+                {
+                    extract_asset();
+                }
+                if (ImGui::MenuItem(ICON_FA_ANGLES_DOWN "Extract All Assets"))
+                {
+                    extract_assets();
+                }
                 ImGui::Separator();
                 if (ImGui::MenuItem(ICON_FA_RECTANGLE_XMARK "Exit"))
                 {
