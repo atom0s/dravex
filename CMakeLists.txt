@@ -101,12 +101,22 @@ set(dravex_lib
     ZLIB::ZLIB
 )
 set(dravex_src
+    "src/binarybuffer.hpp"
     "src/defines.hpp"
     "src/imgui_dravex.cpp"
     "src/imgui_dravex.hpp"
     "src/main.cpp"
+    "src/utils.hpp"
     "src/window.cpp"
     "src/window.hpp"
+
+    "src/assets/asset.hpp"
+    "src/assets/asset_texture.hpp"
+
+    "src/package/package.cpp"
+    "src/package/package.hpp"
+    "src/package/v118.hpp"
+    "src/package/v666.hpp"
 
     # ImGui Source Files
     "ext/imgui/imgui_demo.cpp"
