@@ -190,11 +190,7 @@ public:
 
         static const LanguageDefinition& CPlusPlus();
         static const LanguageDefinition& HLSL();
-        static const LanguageDefinition& GLSL();
-        static const LanguageDefinition& C();
-        static const LanguageDefinition& SQL();
-        static const LanguageDefinition& AngelScript();
-        static const LanguageDefinition& Lua();
+        static const LanguageDefinition& PlainText();
     };
 
     TextEditor();
@@ -340,6 +336,7 @@ public:
     static const Palette& GetDarkPalette();
     static const Palette& GetLightPalette();
     static const Palette& GetRetroBluePalette();
+    static const Palette& GetMonokaiPalette();
 
 private:
     typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
