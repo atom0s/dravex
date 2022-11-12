@@ -25,14 +25,163 @@
  */
 
 #include "defines.hpp"
+#include "imgui_internal.h"
 #include "imgui_dravex.hpp"
+#include "imgui_fontawesome.hpp"
+#include "imgui_fontawesome_brands.hpp"
+#include "package/package.hpp"
 #include "window.hpp"
+
+#include "assets/asset_texture.hpp"
+
+/**
+ * Globals
+ */
+std::shared_ptr<dravex::window> g_window;
+int32_t g_selected_asset_index_ = -1;
+std::shared_ptr<dravex::assets::asset_texture> g_asset;
+
+/**
+ * Resets the various asset variables.
+ */
+void reset_asset_variables(void)
+{
+    g_selected_asset_index_ = -1;
+
+    if (g_asset)
+    {
+        g_asset->release();
+        g_asset = nullptr;
+    }
+}
+
+/**
+ * Loads an asset from its file data to be viewed.
+ *
+ * @param {uint32_t} file_type - The file type of the asset being loaded.
+ * @param {std::vector} data - The file data of the asset.
+ */
+void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
+{
+    switch (file_type)
+    {
+        case 0: // tga
+        case 1: // bmp
+        case 2: // dds
+            g_asset = std::make_shared<dravex::assets::asset_texture>();
+            g_asset->initialize(g_window->get_d3d9dev(), data);
+            break;
+
+        case 3:  // ttf
+        case 4:  // cobj
+        case 5:  // d3d
+        case 6:  // dre
+        case 7:  // wav
+        case 8:  // ogg
+        case 9:  // win
+        case 10: // msc
+        case 11: // mig
+        case 12: // dict
+        case 13: // gc
+        case 14: // tile
+        case 15: // world
+        case 16: // zone
+        case 17: // dat
+        case 18: // fx
+        case 19: // cfg
+        case 20: // txt
+            break;
+
+        case 21: // (undefined)
+        case 22: // (undefined)
+            break;
+
+        default:
+            break;
+    }
+}
+
+/**
+ * Renders the assets list view.
+ */
+void render_view_assets(void)
+{
+    const auto entry_count = dravex::package::instance().get_entry_count();
+    if (entry_count == 0)
+        return;
+
+    ImGui::BeginChild("##entry_list", ImVec2(0.0f, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar);
+
+    ImGuiListClipper clipper;
+    clipper.Begin(entry_count);
+
+    while (clipper.Step())
+    {
+        for (auto x = clipper.DisplayStart; x < clipper.DisplayEnd; x++)
+        {
+            const auto& e   = dravex::package::instance().get_entry(x);
+            const auto& s   = dravex::package::instance().get_string(e.string_offset_);
+            const auto& ext = dravex::package::get_extension(e.file_type_);
+
+            if (ImGui::Selectable(std::format("{}{}##entry_{}", s == nullptr ? "(unknown)" : s, ext, x).c_str(), x == g_selected_asset_index_))
+            {
+                if (g_selected_asset_index_ != x)
+                {
+                    reset_asset_variables();
+
+                    g_selected_asset_index_ = x;
+
+                    load_asset(e.file_type_, dravex::package::instance().get_entry_data(x));
+                }
+            }
+
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text(std::format("{}{}", s == nullptr ? "(unknown)" : s, ext).c_str());
+                ImGui::Separator();
+                ImGui::Text(std::format("       Compressed : {}", e.is_compressed_ ? "True" : "False").c_str());
+                ImGui::Text(std::format("  Size Compressed : {}", e.size_compressed_).c_str());
+                ImGui::Text(std::format("Size Uncompressed : {}", e.size_uncompressed_).c_str());
+                ImGui::Text(std::format("         Checksum : {:08X} (Adler32)", e.checksum_).c_str());
+
+                if (e.is_compressed_)
+                {
+                    const auto ratio = (1.0f - (static_cast<float>(e.size_compressed_) / static_cast<float>(e.size_uncompressed_))) * 100.0f;
+                    ImGui::NewLine();
+                    ImGui::Text(std::format("Compression Ratio : {:.2f}%%", ratio).c_str());
+                }
+
+                ImGui::EndTooltip();
+            }
+        }
+    }
+
+    ImGui::EndChild();
+}
+
+/**
+ * Renders the logging view.
+ */
+void render_view_logging(void)
+{
+}
+
+/**
+ * Renders the main view.
+ */
+void render_view_main(void)
+{
+    if (g_asset)
+        g_asset->render();
+}
 
 /**
  * Callback invoked when the scene is being rendered.
  */
 void __stdcall on_render(void)
 {
+    // Render ImGui..
     dravex::imguimgr::instance().render();
 }
 
@@ -44,6 +193,7 @@ void __stdcall on_render(void)
  */
 bool __stdcall on_reset(const bool is_pre_reset)
 {
+    // Reset ImGui resources..
     if (is_pre_reset)
         dravex::imguimgr::instance().prereset();
     else
@@ -58,9 +208,116 @@ bool __stdcall on_reset(const bool is_pre_reset)
 void __stdcall on_update(void)
 {
     dravex::imguimgr::instance().beginscene();
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open Package"))
+                {
+                    char file_path[MAX_PATH]{};
 
-    ImGui::ShowDemoWindow();
+                    OPENFILENAMEA ofn{};
+                    ofn.lStructSize     = sizeof(OPENFILENAMEA);
+                    ofn.hwndOwner       = g_window->get_hwnd();
+                    ofn.hInstance       = ::GetModuleHandleA(nullptr);
+                    ofn.lpstrFilter     = "game.pki\0game.pki\0";
+                    ofn.nFilterIndex    = 1;
+                    ofn.lpstrFile       = file_path;
+                    ofn.lpstrFile[0]    = '\0';
+                    ofn.nMaxFile        = MAX_PATH;
+                    ofn.lpstrFileTitle  = nullptr;
+                    ofn.nMaxFileTitle   = 0;
+                    ofn.lpstrInitialDir = nullptr;
+                    ofn.Flags           = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
+                    if (::GetOpenFileNameA(&ofn))
+                    {
+                        reset_asset_variables();
+
+                        dravex::package::instance().close();
+                        dravex::package::instance().open(file_path);
+                    }
+                }
+                if (ImGui::MenuItem(ICON_FA_FOLDER_CLOSED "Close"))
+                {
+                    reset_asset_variables();
+
+                    dravex::package::instance().close();
+                }
+                ImGui::Separator();
+                ImGui::MenuItem(ICON_FA_ANGLE_DOWN "Extract Selected Asset");
+                ImGui::MenuItem(ICON_FA_ANGLES_DOWN "Extract All Assets");
+                ImGui::Separator();
+                if (ImGui::MenuItem(ICON_FA_RECTANGLE_XMARK "Exit"))
+                {
+                    ::PostQuitMessage(0);
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Help"))
+            {
+                ImGui::MenuItem(ICON_FA_GITHUB "GitHub Repo");
+                ImGui::MenuItem(ICON_FA_DOWNLOAD "Latest Releases");
+                ImGui::MenuItem(ICON_FA_BUG "Bug Reports");
+                ImGui::Separator();
+                ImGui::MenuItem(ICON_FA_CIRCLE_INFO "About dravex");
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+
+        // Prepare the dockspace..
+        auto dock_window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        dock_window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        dock_window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+        auto main_viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(main_viewport->Pos);
+        ImGui::SetNextWindowSize(main_viewport->Size);
+        ImGui::SetNextWindowViewport(main_viewport->ID);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::Begin("###dravex_main_window", nullptr, dock_window_flags);
+        ImGui::PopStyleVar(3);
+
+        // Build the dockspace default layout..
+        if (ImGui::DockBuilderGetNode(ImGui::GetID("###dravex_dockspace")) == nullptr)
+        {
+            auto dock_id = ImGui::GetID("###dravex_dockspace");
+            ImGui::DockBuilderRemoveNode(dock_id);
+            ImGui::DockBuilderAddNode(dock_id);
+
+            auto dock_loc_main = dock_id;
+            auto dock_loc_left = ImGui::DockBuilderSplitNode(dock_loc_main, ImGuiDir_Left, 0.20f, nullptr, &dock_loc_main);
+            auto dock_loc_down = ImGui::DockBuilderSplitNode(dock_loc_main, ImGuiDir_Down, 0.20f, nullptr, &dock_loc_main);
+
+            ImGui::DockBuilderDockWindow("###view_assets", dock_loc_left);
+            ImGui::DockBuilderDockWindow("###view_main", dock_loc_main);
+            ImGui::DockBuilderDockWindow("###view_log", dock_loc_down);
+            ImGui::DockBuilderFinish(dock_id);
+        }
+
+        ImGui::DockSpace(ImGui::GetID("###dravex_dockspace"), ImVec2(0.0f, 0.0f), 0);
+        ImGui::End();
+
+        // Render the asset list view..
+        ImGui::Begin(ICON_FA_PUZZLE_PIECE "Assets List###view_assets");
+        render_view_assets();
+        ImGui::End();
+
+        // Render the asset viewer view..
+        ImGui::Begin(ICON_FA_SHARE_NODES "Asset Viewer###view_main", nullptr, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        render_view_main();
+        ImGui::End();
+
+        // Render the logging view..
+        ImGui::Begin(ICON_FA_LIST "Log###view_log", nullptr, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        render_view_logging();
+        ImGui::End();
+    }
     dravex::imguimgr::instance().endscene();
 }
 
@@ -87,31 +344,46 @@ int32_t __cdecl main(int32_t argc, char* argv[])
               << std::endl
               << std::endl;
 
-    // Initialize the window..
-    const auto window = std::make_shared<dravex::window>();
-    if (!window->initialize())
-        return 0;
+    // TODO: Remove this..
+    dravex::package::instance().open("C:\\Users\\atom0s\\Desktop\\dungeon_runners\\v118\\game.pki");
 
-    // Setup window callbacks..
-    window->set_render_callback(on_render);
-    window->set_reset_callback(on_reset);
-    window->set_update_callback(on_update);
+    /**
+     * Runs the application.
+     *
+     * @return {bool} True on success, false otherwise.
+     */
+    const auto run_application = [](void) -> bool {
+        // Initialize the window..
+        g_window = std::make_shared<dravex::window>();
+        if (!g_window->initialize())
+            return false;
 
-    // Initialize ImGui..
-    if (!dravex::imguimgr::instance().initialize(window->get_hwnd(), window->get_d3d9dev()))
-    {
-        window->release();
-        return 0;
-    }
+        // Setup window callbacks..
+        g_window->set_render_callback(on_render);
+        g_window->set_reset_callback(on_reset);
+        g_window->set_update_callback(on_update);
+
+        // Initialize ImGui..
+        if (!dravex::imguimgr::instance().initialize(g_window->get_hwnd(), g_window->get_d3d9dev()))
+            return false;
+
+        // Run the window..
+        g_window->run();
+
+        return true;
+    };
 
     // Run the application..
-    window->run();
+    const auto ret = run_application();
 
     // Cleanup..
     dravex::imguimgr::instance().release();
+    dravex::package::instance().close();
 
-    // Cleanup the window..
-    window->release();
+    if (g_asset)
+        g_asset->release();
 
-    return 0;
+    g_window->release();
+
+    return !ret;
 }
