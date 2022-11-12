@@ -77,7 +77,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(dravex_inc
         "ext/d3d9/include/"
         "ext/imgui/"
+        "ext/imgui_colortexteditor/"
         "ext/imgui_fontawesome/"
+        "ext/imgui_memoryeditor/"
         "ext/zlib/"
     )
     set(dravex_lib_paths
@@ -87,7 +89,9 @@ elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(dravex_inc
         "ext/d3d9/include/"
         "ext/imgui/"
+        "ext/imgui_colortexteditor/"
         "ext/imgui_fontawesome/"
+        "ext/imgui_memoryeditor/"
         "ext/zlib/"
     )
     set(dravex_lib_paths
@@ -124,6 +128,8 @@ set(dravex_src
     "ext/imgui/imgui_tables.cpp"
     "ext/imgui/imgui_widgets.cpp"
     "ext/imgui/imgui.cpp"
+
+    "ext/imgui_colortexteditor/texteditor.cpp"
 )
 
 if (WIN32)

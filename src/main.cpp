@@ -32,6 +32,7 @@
 #include "package/package.hpp"
 #include "window.hpp"
 
+#include "assets/asset_text.hpp"
 #include "assets/asset_texture.hpp"
 
 /**
@@ -39,7 +40,7 @@
  */
 std::shared_ptr<dravex::window> g_window;
 int32_t g_selected_asset_index_ = -1;
-std::shared_ptr<dravex::assets::asset_texture> g_asset;
+std::shared_ptr<dravex::assets::asset> g_asset;
 
 /**
  * Resets the various asset variables.
@@ -184,17 +185,21 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 7:  // wav
         case 8:  // ogg
         case 9:  // win
-        case 10: // msc
         case 11: // mig
+        case 17: // dat
+        case 18: // fx
+            break;
+
+        case 10: // msc
         case 12: // dict
         case 13: // gc
         case 14: // tile
         case 15: // world
         case 16: // zone
-        case 17: // dat
-        case 18: // fx
         case 19: // cfg
         case 20: // txt
+            g_asset = std::make_shared<dravex::assets::asset_text>();
+            g_asset->initialize(g_window->get_d3d9dev(), data);
             break;
 
         case 21: // (undefined)
