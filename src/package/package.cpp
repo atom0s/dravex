@@ -83,17 +83,17 @@ bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
     // Convert the entries into generalized type..
     for (auto x = 0; x < entry_count; x++)
     {
-        const auto& e = entries[x];
+        const auto& e           = entries[x];
+        auto obj                = std::make_shared<dravex::fileentry_t>();
+        obj->file_type_         = static_cast<uint32_t>(e.flags) & 0x3F;
+        obj->string_offset_     = e.string_offset;
+        obj->data_offset_       = e.data_offset;
+        obj->size_compressed_   = e.size_compressed;
+        obj->size_uncompressed_ = e.size_decompressed;
+        obj->checksum_          = e.checksum_compressed;
+        obj->is_compressed_     = (e.flags & 0x40) == 0x40;
 
-        this->entries_.push_back({
-            static_cast<uint32_t>(e.flags) & 0x3F,
-            e.string_offset,
-            e.data_offset,
-            e.size_compressed,
-            e.size_decompressed,
-            e.checksum_compressed,
-            (e.flags & 0x40) == 0x40,
-        });
+        this->entries_.push_back(obj);
     }
 
     return true;
@@ -171,17 +171,17 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
     // Convert the entries into generalized type..
     for (auto x = 0; x < entry_count; x++)
     {
-        const auto& e = entries[x];
+        const auto& e           = entries[x];
+        auto obj                = std::make_shared<dravex::fileentry_t>();
+        obj->file_type_         = get_file_type(x);
+        obj->string_offset_     = e.string_offset;
+        obj->data_offset_       = e.data_offset;
+        obj->size_compressed_   = e.size_compressed;
+        obj->size_uncompressed_ = e.size_decompressed;
+        obj->checksum_          = e.checksum;
+        obj->is_compressed_     = e.is_compressed > 0;
 
-        this->entries_.push_back({
-            get_file_type(x),
-            e.string_offset,
-            e.data_offset,
-            e.size_compressed,
-            e.size_decompressed,
-            e.checksum,
-            e.is_compressed > 0,
-        });
+        this->entries_.push_back(obj);
     }
 
     return true;
@@ -306,13 +306,12 @@ std::size_t dravex::package::get_entry_count(void)
  * Returns the file entry at the given index.
  *
  * @param {int32_t} index - The index of the file entry to return.
- * @return {fileentry_t&} The file entry.
+ * @return {std::shared_ptr} The file entry.
  */
-dravex::fileentry_t& dravex::package::get_entry(const int32_t index)
+std::shared_ptr<dravex::fileentry_t> dravex::package::get_entry(const int32_t index)
 {
-    dravex::fileentry_t default_entry{};
     return (this->entries_.size() == 0 || index > this->entries_.size() || index == -1)
-               ? default_entry
+               ? nullptr
                : this->entries_[index];
 }
 
@@ -327,16 +326,16 @@ std::vector<uint8_t> dravex::package::get_entry_data(const int32_t index)
     if (this->entries_.size() == 0 || index > this->entries_.size() || index == -1)
         return {};
 
-    const auto& e = this->entries_[index];
-    auto size     = e.is_compressed_ ? e.size_compressed_ : e.size_uncompressed_;
+    const auto e = this->entries_[index];
+    auto size    = e->is_compressed_ ? e->size_compressed_ : e->size_uncompressed_;
 
     // Read the file data from the game.pkg file..
     std::vector<uint8_t> data(size, '\0');
-    ::fseek(this->pkg_file_, e.data_offset_, SEEK_SET);
+    ::fseek(this->pkg_file_, e->data_offset_, SEEK_SET);
     ::fread(data.data(), size, 1, this->pkg_file_);
 
     // Return the raw data if it is not compressed..
-    if (!e.is_compressed_)
+    if (!e->is_compressed_)
         return data;
 
     // Inflate the data via zlib..

@@ -69,7 +69,7 @@ namespace dravex
         FILE* pkg_file_;
 
         std::vector<uint8_t> guid_;
-        std::vector<fileentry_t> entries_;
+        std::vector<std::shared_ptr<fileentry_t>> entries_;
         std::map<uint32_t, std::string> strings_;
 
         auto parse_v118(std::shared_ptr<dravex::binarybuffer> buffer) -> bool;
@@ -84,7 +84,7 @@ namespace dravex
         auto close(void) -> void;
 
         auto get_entry_count(void) -> std::size_t;
-        auto get_entry(const int32_t index) -> dravex::fileentry_t&;
+        auto get_entry(const int32_t index) -> std::shared_ptr<dravex::fileentry_t>;
         auto get_entry_data(const int32_t index) -> std::vector<uint8_t>;
         auto get_string(const uint32_t offset) -> const char*;
     };
