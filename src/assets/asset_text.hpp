@@ -40,6 +40,7 @@ namespace dravex::assets
     class asset_text final : public asset
     {
         IDirect3DDevice9* device_;
+        uint32_t file_type_;
         std::vector<uint8_t> data_;
         TextEditor editor_;
         TextEditor::LanguageDefinition lang_;
@@ -50,6 +51,7 @@ namespace dravex::assets
          */
         asset_text(void)
             : device_{nullptr}
+            , file_type_{0}
             , editor_{}
             , lang_{}
         {}
@@ -62,22 +64,38 @@ namespace dravex::assets
          * Initializes the asset, preparing it for viewing.
          *
          * @param {IDirect3DDevice9*} device - The Direct3D device pointer.
+         * @param {uint32_t} file_type - The asset file type.
          * @param {std::vector&} data - The asset raw data.
          * @return {bool} True on success, false otherwise.
          */
-        bool initialize(IDirect3DDevice9* device, const std::vector<uint8_t>& data)
+        bool initialize(IDirect3DDevice9* device, const uint32_t file_type, const std::vector<uint8_t>& data)
         {
             this->device_ = device;
             this->device_->AddRef();
-            this->data_ = data;
+            this->file_type_ = file_type;
+            this->data_      = data;
 
             // Convert the incoming data to chars..
             std::vector<char> str(this->data_.begin(), this->data_.end());
             str.push_back(0x00);
 
+            // Set the editor language..
+            switch (this->file_type_)
+            {
+                case 18: // fx
+                {
+                    this->lang_ = TextEditor::LanguageDefinition::HLSL();
+                    break;
+                }
+
+                default:
+                    this->lang_ = TextEditor::LanguageDefinition::PlainText();
+                    break;
+            }
+
             // Setup the editor..
-            this->lang_ = TextEditor::LanguageDefinition::CPlusPlus();
             this->editor_.SetLanguageDefinition(this->lang_);
+            this->editor_.SetPalette(TextEditor::GetMonokaiPalette());
             this->editor_.SetText(str.data());
             this->editor_.SetReadOnly(true);
             this->editor_.SetShowWhitespaces(false);
@@ -111,7 +129,10 @@ namespace dravex::assets
                 if (ImGui::BeginTabItem("Hex View", nullptr, ImGuiTabItemFlags_NoCloseButton | ImGuiTabItemFlags_NoCloseWithMiddleMouseButton))
                 {
                     static MemoryEditor mem_edit;
-                    mem_edit.ReadOnly = true;
+                    mem_edit.OptGreyOutZeroes = false;
+                    mem_edit.OptMidColsCount  = 0;
+                    mem_edit.OptUpperCaseHex  = true;
+                    mem_edit.ReadOnly         = true;
                     mem_edit.DrawContents(this->data_.data(), this->data_.size());
                     ImGui::EndTabItem();
                 }
