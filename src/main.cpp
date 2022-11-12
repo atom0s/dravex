@@ -34,6 +34,7 @@
 
 #include "assets/asset_text.hpp"
 #include "assets/asset_texture.hpp"
+#include "assets/asset_unknown.hpp"
 
 /**
  * Globals
@@ -175,7 +176,21 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 1: // bmp
         case 2: // dds
             g_asset = std::make_shared<dravex::assets::asset_texture>();
-            g_asset->initialize(g_window->get_d3d9dev(), data);
+            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            break;
+
+        case 10: // msc
+        case 11: // mig
+        case 12: // dict
+        case 13: // gc
+        case 14: // tile
+        case 15: // world
+        case 16: // zone
+        case 18: // fx
+        case 19: // cfg
+        case 20: // txt
+            g_asset = std::make_shared<dravex::assets::asset_text>();
+            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
             break;
 
         case 3:  // ttf
@@ -185,28 +200,12 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 7:  // wav
         case 8:  // ogg
         case 9:  // win
-        case 11: // mig
         case 17: // dat
-        case 18: // fx
-            break;
-
-        case 10: // msc
-        case 12: // dict
-        case 13: // gc
-        case 14: // tile
-        case 15: // world
-        case 16: // zone
-        case 19: // cfg
-        case 20: // txt
-            g_asset = std::make_shared<dravex::assets::asset_text>();
-            g_asset->initialize(g_window->get_d3d9dev(), data);
-            break;
-
         case 21: // (undefined)
         case 22: // (undefined)
-            break;
-
         default:
+            g_asset = std::make_shared<dravex::assets::asset_unknown>();
+            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
             break;
     }
 }
@@ -460,9 +459,6 @@ int32_t __cdecl main(int32_t argc, char* argv[])
               << std::endl
               << std::endl;
 
-    // TODO: Remove this..
-    dravex::package::instance().open("C:\\Users\\atom0s\\Desktop\\dungeon_runners\\v118\\game.pki");
-
     /**
      * Runs the application.
      *
@@ -482,6 +478,11 @@ int32_t __cdecl main(int32_t argc, char* argv[])
         // Initialize ImGui..
         if (!dravex::imguimgr::instance().initialize(g_window->get_hwnd(), g_window->get_d3d9dev()))
             return false;
+
+        // TODO: Remove this..
+        dravex::package::instance().open("C:\\Users\\atom0s\\Desktop\\dungeon_runners\\v118\\game.pki");
+        g_selected_asset_index_ = 25828;
+        load_asset(18, dravex::package::instance().get_entry_data(25828));
 
         // Run the window..
         g_window->run();
