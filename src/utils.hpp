@@ -86,6 +86,19 @@ namespace dravex::utils
     }
 
     /**
+     * Calculates and returns the adler32 checksum of the given input data.
+     *
+     * @param {uint8_t*} input - The input buffer.
+     * @param {std::size_t} input_size - The input buffer size.
+     * @return {uint32_t} The data checksum.
+     */
+    static uint32_t adler32(const uint8_t* input, const std::size_t input_size)
+    {
+        auto adler = adler32_z(0L, Z_NULL, 0);
+        return adler32_z(adler, input, input_size);
+    }
+
+    /**
      * Parses a block of null terminated strings into a map.
      *
      * @param {std::vector&} input - The input data to parse.
