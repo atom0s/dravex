@@ -32,6 +32,7 @@
 #include "package/package.hpp"
 #include "window.hpp"
 
+#include "assets/asset_font.hpp"
 #include "assets/asset_text.hpp"
 #include "assets/asset_texture.hpp"
 #include "assets/asset_unknown.hpp"
@@ -40,7 +41,10 @@
  * Globals
  */
 std::shared_ptr<dravex::window> g_window;
-int32_t g_selected_asset_index_ = -1;
+int32_t g_selected_asset_index = -1;
+bool g_has_pending_asset       = false;
+int32_t g_pending_asset_type   = -1;
+int32_t g_pending_asset_index  = -1;
 std::shared_ptr<dravex::assets::asset> g_asset;
 
 /**
@@ -48,7 +52,10 @@ std::shared_ptr<dravex::assets::asset> g_asset;
  */
 void reset_asset_variables(void)
 {
-    g_selected_asset_index_ = -1;
+    g_selected_asset_index = -1;
+    g_has_pending_asset    = false;
+    g_pending_asset_type   = -1;
+    g_pending_asset_index  = -1;
 
     if (g_asset)
     {
@@ -63,11 +70,11 @@ void reset_asset_variables(void)
 void extract_asset(void)
 {
     // Obtain the selected asset entry information..
-    const auto& entry = dravex::package::instance().get_entry(g_selected_asset_index_);
+    const auto& entry = dravex::package::instance().get_entry(g_selected_asset_index);
     if (entry == nullptr)
         return;
 
-    const auto& data = dravex::package::instance().get_entry_data(g_selected_asset_index_);
+    const auto& data = dravex::package::instance().get_entry_data(g_selected_asset_index);
     const auto& name = dravex::package::instance().get_string(entry->string_offset_);
     auto ext         = dravex::package::instance().get_extension(entry->file_type_);
 
@@ -179,6 +186,11 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
             g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
             break;
 
+        case 3: // ttf
+            g_asset = std::make_shared<dravex::assets::asset_font>();
+            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            break;
+
         case 10: // msc
         case 11: // mig
         case 12: // dict
@@ -193,7 +205,6 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
             g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
             break;
 
-        case 3:  // ttf
         case 4:  // cobj
         case 5:  // d3d
         case 6:  // dre
@@ -232,15 +243,17 @@ void render_view_assets(void)
             const auto& s   = dravex::package::instance().get_string(e->string_offset_);
             const auto& ext = dravex::package::get_extension(e->file_type_);
 
-            if (ImGui::Selectable(std::format("{}{}##entry_{}", s == nullptr ? "(unknown)" : s, ext, x).c_str(), x == g_selected_asset_index_))
+            if (ImGui::Selectable(std::format("{}{}##entry_{}", s == nullptr ? "(unknown)" : s, ext, x).c_str(), x == g_selected_asset_index))
             {
-                if (g_selected_asset_index_ != x)
+                if (g_selected_asset_index != x)
                 {
                     reset_asset_variables();
 
-                    g_selected_asset_index_ = x;
+                    g_selected_asset_index = x;
 
-                    load_asset(e->file_type_, dravex::package::instance().get_entry_data(x));
+                    g_has_pending_asset   = true;
+                    g_pending_asset_type  = e->file_type_;
+                    g_pending_asset_index = x;
                 }
             }
 
@@ -316,6 +329,13 @@ bool __stdcall on_reset(const bool is_pre_reset)
  */
 void __stdcall on_update(void)
 {
+    // Load pending asset prior to ImGui frame..
+    if (g_has_pending_asset)
+    {
+        load_asset(g_pending_asset_type, dravex::package::instance().get_entry_data(g_pending_asset_index));
+        g_has_pending_asset = false;
+    }
+
     dravex::imguimgr::instance().beginscene();
     {
         if (ImGui::BeginMainMenuBar())
@@ -481,7 +501,7 @@ int32_t __cdecl main(int32_t argc, char* argv[])
 
         // TODO: Remove this..
         dravex::package::instance().open("C:\\Users\\atom0s\\Desktop\\dungeon_runners\\v118\\game.pki");
-        g_selected_asset_index_ = 25828;
+        g_selected_asset_index = 25828;
         load_asset(18, dravex::package::instance().get_entry_data(25828));
 
         // Run the window..
