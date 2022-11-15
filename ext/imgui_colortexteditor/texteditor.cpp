@@ -49,6 +49,9 @@ TextEditor::TextEditor()
     , mShowWhitespaces(true)
     , mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 {
+    mPalette.resize((int32_t)PaletteIndex::Max);
+    mPaletteBase.resize((int32_t)PaletteIndex::Max);
+
     SetPalette(GetMonokaiPalette());
     SetLanguageDefinition(LanguageDefinition::CPlusPlus());
     mLines.push_back(Line());

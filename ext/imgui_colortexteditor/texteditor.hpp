@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <array>
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>
@@ -137,7 +136,7 @@ public:
     typedef std::unordered_set<std::string> Keywords;
     typedef std::map<int, std::string> ErrorMarkers;
     typedef std::unordered_set<int> Breakpoints;
-    typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
+    typedef std::vector<ImU32> Palette;
     typedef uint8_t Char;
 
     struct Glyph
