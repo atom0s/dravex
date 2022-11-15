@@ -54,6 +54,13 @@ END
 // remains consistent on all systems.
 IDI_ICON                ICON                    "dravex.ico"
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// RCDATA
+//
+
+IDI_APPIMAGE            RCDATA                  "dravex.png"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
