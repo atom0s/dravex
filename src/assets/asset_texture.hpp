@@ -119,7 +119,9 @@ namespace dravex::assets
                 ImGui::NewLine();
 
                 // Display the asset..
+                ImGui::BeginChild("##dravex_texture", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
                 ImGui::Image(this->texture_, ImVec2(this->desc_.Width * this->zoom_, this->desc_.Height * this->zoom_), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), this->color_);
+                ImGui::EndChild();
             }
             ImGui::PopItemWidth();
 
