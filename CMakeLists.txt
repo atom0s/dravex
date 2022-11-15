@@ -75,6 +75,7 @@ find_package(ZLIB REQUIRED)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(dravex_inc
+        "ext/audio/"
         "ext/d3d9/include/"
         "ext/imgui/"
         "ext/imgui_colortexteditor/"
@@ -87,6 +88,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     )
 elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(dravex_inc
+        "ext/audio/"
         "ext/d3d9/include/"
         "ext/imgui/"
         "ext/imgui_colortexteditor/"
@@ -116,6 +118,8 @@ set(dravex_src
 
     "src/assets/asset.hpp"
     "src/assets/asset_font.hpp"
+    "src/assets/asset_ogg.hpp"
+    "src/assets/asset_splash.hpp"
     "src/assets/asset_text.hpp"
     "src/assets/asset_texture.hpp"
     "src/assets/asset_unknown.hpp"
@@ -132,6 +136,7 @@ set(dravex_src
     "ext/imgui/imgui_widgets.cpp"
     "ext/imgui/imgui.cpp"
 
+    # ImGui Extension Source Files
     "ext/imgui_colortexteditor/texteditor.cpp"
 )
 
