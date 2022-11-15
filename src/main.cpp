@@ -33,6 +33,8 @@
 #include "window.hpp"
 
 #include "assets/asset_font.hpp"
+#include "assets/asset_ogg.hpp"
+#include "assets/asset_splash.hpp"
 #include "assets/asset_text.hpp"
 #include "assets/asset_texture.hpp"
 #include "assets/asset_unknown.hpp"
@@ -191,6 +193,11 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
             g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
             break;
 
+        case 8: // ogg
+            g_asset = std::make_shared<dravex::assets::asset_ogg>();
+            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            break;
+
         case 10: // msc
         case 11: // mig
         case 12: // dict
@@ -209,7 +216,6 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 5:  // d3d
         case 6:  // dre
         case 7:  // wav
-        case 8:  // ogg
         case 9:  // win
         case 17: // dat
         case 21: // (undefined)
@@ -376,28 +382,29 @@ void __stdcall on_update(void)
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem(ICON_FA_ANGLE_DOWN "Extract Selected Asset"))
-                {
                     extract_asset();
-                }
                 if (ImGui::MenuItem(ICON_FA_ANGLES_DOWN "Extract All Assets"))
-                {
                     extract_assets();
-                }
                 ImGui::Separator();
                 if (ImGui::MenuItem(ICON_FA_RECTANGLE_XMARK "Exit"))
-                {
                     ::PostQuitMessage(0);
-                }
                 ImGui::EndMenu();
             }
 
             if (ImGui::BeginMenu("Help"))
             {
-                ImGui::MenuItem(ICON_FA_GITHUB "GitHub Repo");
-                ImGui::MenuItem(ICON_FA_DOWNLOAD "Latest Releases");
-                ImGui::MenuItem(ICON_FA_BUG "Bug Reports");
+                if (ImGui::MenuItem(ICON_FA_GITHUB "GitHub Repo"))
+                    dravex::utils::open_url("https://github.com/atom0s/dravex");
+                if (ImGui::MenuItem(ICON_FA_DOWNLOAD "Latest Releases"))
+                    dravex::utils::open_url("https://github.com/atom0s/dravex/releases/latest");
+                if (ImGui::MenuItem(ICON_FA_BUG "Bug Reports"))
+                    dravex::utils::open_url("https://github.com/atom0s/dravex/issues");
                 ImGui::Separator();
-                ImGui::MenuItem(ICON_FA_CIRCLE_INFO "About dravex");
+                if (ImGui::MenuItem(ICON_FA_CIRCLE_INFO "About dravex"))
+                {
+                    g_asset = std::make_shared<dravex::assets::asset_splash>();
+                    g_asset->initialize(g_window->get_d3d9dev(), 0, {});
+                }
                 ImGui::EndMenu();
             }
 
@@ -435,7 +442,7 @@ void __stdcall on_update(void)
             ImGui::DockBuilderFinish(dock_id);
         }
 
-        ImGui::DockSpace(ImGui::GetID("###dravex_dockspace"), ImVec2(0.0f, 0.0f), 0);
+        ImGui::DockSpace(ImGui::GetID("###dravex_dockspace"));
         ImGui::End();
 
         // Render the asset list view..
@@ -444,12 +451,12 @@ void __stdcall on_update(void)
         ImGui::End();
 
         // Render the asset viewer view..
-        ImGui::Begin(ICON_FA_SHARE_NODES "Asset Viewer###view_main", nullptr, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        ImGui::Begin(ICON_FA_SHARE_NODES "Asset Viewer###view_main");
         render_view_main();
         ImGui::End();
 
         // Render the logging view..
-        ImGui::Begin(ICON_FA_LIST "Log###view_log", nullptr, ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        ImGui::Begin(ICON_FA_LIST "Log###view_log");
         render_view_logging();
         ImGui::End();
     }
@@ -499,10 +506,9 @@ int32_t __cdecl main(int32_t argc, char* argv[])
         if (!dravex::imguimgr::instance().initialize(g_window->get_hwnd(), g_window->get_d3d9dev()))
             return false;
 
-        // TODO: Remove this..
-        dravex::package::instance().open("C:\\Users\\atom0s\\Desktop\\dungeon_runners\\v118\\game.pki");
-        g_selected_asset_index = 25828;
-        load_asset(18, dravex::package::instance().get_entry_data(25828));
+        // Default the initial asset to the splash screen..
+        g_asset = std::make_shared<dravex::assets::asset_splash>();
+        g_asset->initialize(g_window->get_d3d9dev(), 0, {});
 
         // Run the window..
         g_window->run();
