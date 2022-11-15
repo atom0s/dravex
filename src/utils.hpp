@@ -120,6 +120,16 @@ namespace dravex::utils
         }
     }
 
+    /**
+     * Opens the given url.
+     *
+     * @param {std::string&} url - The url to open.
+     */
+    static void open_url(const std::string& url)
+    {
+        ::ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    }
+
 } // namespace dravex::utils
 
 #endif // UTILS_HPP
