@@ -37,18 +37,18 @@ namespace dravex::v666
 {
     struct diskpkgfileinfo_t
     {
-        uint32_t string_offset;
-        uint32_t checksum;
-        uint32_t size_compressed;
-        uint32_t data_offset;
-        uint32_t size_decompressed;
-        uint8_t is_compressed;
-        uint8_t padding00[3];
-        uint32_t unknown00;
-        uint32_t unknown01;
-        uint32_t unknown02;
-        uint32_t unknown03;
-        uint32_t unknown04;
+        uint32_t string_offset_;
+        uint32_t checksum_;
+        uint32_t size_compressed_;
+        uint32_t data_offset_;
+        uint32_t size_decompressed_;
+        uint8_t is_compressed_;
+        uint8_t padding00_[3];
+        uint32_t unknown00_;
+        uint32_t unknown01_;
+        uint32_t unknown02_;
+        uint32_t unknown03_;
+        uint32_t unknown04_;
     };
 
 } // namespace dravex::v666

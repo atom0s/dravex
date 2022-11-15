@@ -85,13 +85,13 @@ bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
     {
         const auto& e           = entries[x];
         auto obj                = std::make_shared<dravex::fileentry_t>();
-        obj->file_type_         = static_cast<uint32_t>(e.flags) & 0x3F;
-        obj->string_offset_     = e.string_offset;
-        obj->data_offset_       = e.data_offset;
-        obj->size_compressed_   = e.size_compressed;
-        obj->size_uncompressed_ = e.size_decompressed;
-        obj->checksum_          = e.checksum_compressed;
-        obj->is_compressed_     = (e.flags & 0x40) == 0x40;
+        obj->file_type_         = static_cast<uint32_t>(e.flags_) & 0x3F;
+        obj->string_offset_     = e.string_offset_;
+        obj->data_offset_       = e.data_offset_;
+        obj->size_compressed_   = e.size_compressed_;
+        obj->size_uncompressed_ = e.size_decompressed_;
+        obj->checksum_          = e.checksum_compressed_;
+        obj->is_compressed_     = (e.flags_ & 0x40) == 0x40;
 
         this->entries_.push_back(obj);
     }
@@ -174,12 +174,12 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
         const auto& e           = entries[x];
         auto obj                = std::make_shared<dravex::fileentry_t>();
         obj->file_type_         = get_file_type(x);
-        obj->string_offset_     = e.string_offset;
-        obj->data_offset_       = e.data_offset;
-        obj->size_compressed_   = e.size_compressed;
-        obj->size_uncompressed_ = e.size_decompressed;
-        obj->checksum_          = e.checksum;
-        obj->is_compressed_     = e.is_compressed > 0;
+        obj->string_offset_     = e.string_offset_;
+        obj->data_offset_       = e.data_offset_;
+        obj->size_compressed_   = e.size_compressed_;
+        obj->size_uncompressed_ = e.size_decompressed_;
+        obj->checksum_          = e.checksum_;
+        obj->is_compressed_     = e.is_compressed_ > 0;
 
         this->entries_.push_back(obj);
     }

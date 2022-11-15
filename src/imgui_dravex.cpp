@@ -193,12 +193,12 @@ namespace dravex
     /**
      * Returns the ImGui key id for the given virtual key code.
      *
-     * @param {WPARAM} wParam - The WPARAM value holding the virtual key code.
+     * @param {WPARAM} wparam - The WPARAM value holding the virtual key code.
      * @return {ImGuiKey} The converted ImGuiKey value.
      */
-    ImGuiKey vk_to_imgui_key(const WPARAM wParam)
+    ImGuiKey vk_to_imgui_key(const WPARAM wparam)
     {
-        switch (wParam)
+        switch (wparam)
         {
             case VK_TAB:
                 return ImGuiKey_Tab;
@@ -418,13 +418,13 @@ namespace dravex
     /**
      * Window message hook callback used to allow ImGui to process window messages first before the application.
      *
-     * @param {HWND} hWnd - The window handle that caused the message.
-     * @param {uint32_t} uMsg - The message being processed.
-     * @param {WPARAM} wParam - The WPARAM value of the message.
-     * @param {LPARAM} lParam - The LPARAM value of the message.
+     * @param {HWND} hwnd - The window handle that caused the message.
+     * @param {uint32_t} msg - The message being processed.
+     * @param {WPARAM} wparam - The WPARAM value of the message.
+     * @param {LPARAM} lparam - The LPARAM value of the message.
      * @return {LRESULT} The message result.
      */
-    LRESULT __stdcall ImGui_WindowProc(const HWND hWnd, const uint32_t uMsg, const WPARAM wParam, const LPARAM lParam)
+    LRESULT __stdcall ImGui_WindowProc(const HWND hwnd, const uint32_t msg, const WPARAM wparam, const LPARAM lparam)
     {
         const auto wdata = dravex::imguimgr::instance().get_win32_data();
         if (!wdata)
@@ -432,26 +432,26 @@ namespace dravex
 
         auto& io = ImGui::GetIO();
 
-        switch (uMsg)
+        switch (msg)
         {
             case WM_MOUSEMOVE:
             {
-                wdata->hwnd_mouse_ = hWnd;
+                wdata->hwnd_mouse_ = hwnd;
 
                 if (!wdata->mouse_tracked_)
                 {
-                    TRACKMOUSEEVENT tme{sizeof(TRACKMOUSEEVENT), TME_LEAVE, hWnd, 0};
+                    TRACKMOUSEEVENT tme{sizeof(TRACKMOUSEEVENT), TME_LEAVE, hwnd, 0};
                     ::TrackMouseEvent(&tme);
                     wdata->mouse_tracked_ = true;
                 }
 
-                io.AddMousePosEvent(static_cast<float>(GET_X_LPARAM(lParam)), static_cast<float>(GET_Y_LPARAM(lParam)));
+                io.AddMousePosEvent(static_cast<float>(GET_X_LPARAM(lparam)), static_cast<float>(GET_Y_LPARAM(lparam)));
                 break;
             }
 
             case WM_MOUSELEAVE:
             {
-                if (wdata->hwnd_mouse_ == hWnd)
+                if (wdata->hwnd_mouse_ == hwnd)
                     wdata->hwnd_mouse_ = nullptr;
 
                 wdata->mouse_tracked_ = false;
@@ -471,17 +471,17 @@ namespace dravex
             {
                 int32_t button = 0;
 
-                if (uMsg == WM_LBUTTONDOWN || uMsg == WM_LBUTTONDBLCLK)
+                if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONDBLCLK)
                     button = 0;
-                if (uMsg == WM_RBUTTONDOWN || uMsg == WM_RBUTTONDBLCLK)
+                if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONDBLCLK)
                     button = 1;
-                if (uMsg == WM_MBUTTONDOWN || uMsg == WM_MBUTTONDBLCLK)
+                if (msg == WM_MBUTTONDOWN || msg == WM_MBUTTONDBLCLK)
                     button = 2;
-                if (uMsg == WM_XBUTTONDOWN || uMsg == WM_XBUTTONDBLCLK)
-                    button = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4;
+                if (msg == WM_XBUTTONDOWN || msg == WM_XBUTTONDBLCLK)
+                    button = (GET_XBUTTON_WPARAM(wparam) == XBUTTON1) ? 3 : 4;
 
                 if (wdata->mouse_buttons_down_ == 0 && ::GetCapture() == nullptr)
-                    ::SetCapture(hWnd);
+                    ::SetCapture(hwnd);
 
                 wdata->mouse_buttons_down_ |= 1 << button;
                 io.AddMouseButtonEvent(button, true);
@@ -495,18 +495,18 @@ namespace dravex
             {
                 int32_t button = 0;
 
-                if (uMsg == WM_LBUTTONUP)
+                if (msg == WM_LBUTTONUP)
                     button = 0;
-                if (uMsg == WM_RBUTTONUP)
+                if (msg == WM_RBUTTONUP)
                     button = 1;
-                if (uMsg == WM_MBUTTONUP)
+                if (msg == WM_MBUTTONUP)
                     button = 2;
-                if (uMsg == WM_XBUTTONUP)
-                    button = (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) ? 3 : 4;
+                if (msg == WM_XBUTTONUP)
+                    button = (GET_XBUTTON_WPARAM(wparam) == XBUTTON1) ? 3 : 4;
 
                 wdata->mouse_buttons_down_ &= ~(1 << button);
 
-                if (wdata->mouse_buttons_down_ == 0 && ::GetCapture() == hWnd)
+                if (wdata->mouse_buttons_down_ == 0 && ::GetCapture() == hwnd)
                     ::ReleaseCapture();
 
                 io.AddMouseButtonEvent(button, false);
@@ -514,11 +514,11 @@ namespace dravex
             }
 
             case WM_MOUSEWHEEL:
-                io.AddMouseWheelEvent(0.0f, static_cast<float>(GET_WHEEL_DELTA_WPARAM(wParam)) / static_cast<float>(WHEEL_DELTA));
+                io.AddMouseWheelEvent(0.0f, static_cast<float>(GET_WHEEL_DELTA_WPARAM(wparam)) / static_cast<float>(WHEEL_DELTA));
                 return 0;
 
             case WM_MOUSEHWHEEL:
-                io.AddMouseWheelEvent(static_cast<float>(GET_WHEEL_DELTA_WPARAM(wParam)) / static_cast<float>(WHEEL_DELTA), 0.0f);
+                io.AddMouseWheelEvent(static_cast<float>(GET_WHEEL_DELTA_WPARAM(wparam)) / static_cast<float>(WHEEL_DELTA), 0.0f);
                 return 0;
 
             case WM_KEYDOWN:
@@ -526,17 +526,17 @@ namespace dravex
             case WM_SYSKEYDOWN:
             case WM_SYSKEYUP:
             {
-                const auto is_down = (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN);
-                if (wParam < 256)
+                const auto is_down = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
+                if (wparam < 256)
                 {
                     update_key_modifiers();
 
-                    auto vk = static_cast<int32_t>(wParam);
-                    if ((wParam == VK_RETURN) && (HIWORD(lParam) & KF_EXTENDED))
+                    auto vk = static_cast<int32_t>(wparam);
+                    if ((wparam == VK_RETURN) && (HIWORD(lparam) & KF_EXTENDED))
                         vk = IM_VK_KEYPAD_ENTER;
 
                     const auto key      = vk_to_imgui_key(vk);
-                    const auto scancode = static_cast<int32_t>(LOBYTE(HIWORD(lParam)));
+                    const auto scancode = static_cast<int32_t>(LOBYTE(HIWORD(lparam)));
 
                     if (key != ImGuiKey_None)
                         add_key_event(key, is_down, vk, scancode);
@@ -569,20 +569,20 @@ namespace dravex
 
             case WM_SETFOCUS:
             case WM_KILLFOCUS:
-                io.AddFocusEvent(uMsg == WM_SETFOCUS);
+                io.AddFocusEvent(msg == WM_SETFOCUS);
                 return 0;
 
             case WM_CHAR:
             {
-                if (wParam > 0 && wParam < 0x10000)
-                    io.AddInputCharacterUTF16(static_cast<uint16_t>(wParam));
+                if (wparam > 0 && wparam < 0x10000)
+                    io.AddInputCharacterUTF16(static_cast<uint16_t>(wparam));
 
                 return 0;
             }
 
             case WM_SETCURSOR:
             {
-                if (LOWORD(lParam) == HTCLIENT && update_mouse_cursor())
+                if (LOWORD(lparam) == HTCLIENT && update_mouse_cursor())
                     return 1;
 
                 return 0;
@@ -590,7 +590,7 @@ namespace dravex
 
             case WM_DEVICECHANGE:
             {
-                if (static_cast<uint32_t>(wParam) == DBT_DEVNODES_CHANGED)
+                if (static_cast<uint32_t>(wparam) == DBT_DEVNODES_CHANGED)
                     wdata->want_update_has_gamepad_ = true;
 
                 return 0;
@@ -606,39 +606,41 @@ namespace dravex
     /**
      * Window message hook callback used to allow ImGui to process window messages first before the application.
      *
-     * @param {HWND} hWnd - The window handle that caused the message.
-     * @param {uint32_t} uMsg - The message being processed.
-     * @param {WPARAM} wParam - The WPARAM value of the message.
-     * @param {LPARAM} lParam - The LPARAM value of the message.
+     * @param {HWND} hwnd - The window handle that caused the message.
+     * @param {uint32_t} msg - The message being processed.
+     * @param {WPARAM} wparam - The WPARAM value of the message.
+     * @param {LPARAM} lparam - The LPARAM value of the message.
      * @return {LRESULT} The message result.
      */
-    LRESULT __stdcall WindowProc(const HWND hWnd, const uint32_t uMsg, const WPARAM wParam, const LPARAM lParam)
+    LRESULT __stdcall WindowProc(const HWND hwnd, const uint32_t msg, const WPARAM wparam, const LPARAM lparam)
     {
         if (ImGui::GetCurrentContext() == nullptr)
-            return ::CallWindowProcA(hook_wndproc, hWnd, uMsg, wParam, lParam);
+            return ::CallWindowProcA(hook_wndproc, hwnd, msg, wparam, lparam);
 
-        if (ImGui_WindowProc(hWnd, uMsg, wParam, lParam))
+        if (ImGui_WindowProc(hwnd, msg, wparam, lparam))
             return 1;
 
         auto& io = ImGui::GetIO();
 
-        if (uMsg >= WM_KEYFIRST && uMsg <= WM_KEYLAST)
+        if (msg >= WM_KEYFIRST && msg <= WM_KEYLAST)
         {
             if (io.WantCaptureKeyboard || io.WantTextInput || ImGui::IsAnyItemActive())
                 return 1;
         }
 
-        if ((uMsg >= WM_MOUSEFIRST && uMsg <= WM_MOUSELAST) || uMsg == WM_INPUT)
+        if ((msg >= WM_MOUSEFIRST && msg <= WM_MOUSELAST) || msg == WM_INPUT)
         {
             if (io.WantCaptureMouse)
                 return 1;
         }
 
-        return ::CallWindowProcA(hook_wndproc, hWnd, uMsg, wParam, lParam);
+        return ::CallWindowProcA(hook_wndproc, hwnd, msg, wparam, lparam);
     }
 
     /**
+     * Sets up the render state for ImGui to render properly.
      *
+     * @param {ImDrawData*} draw_data - The ImGui draw data information being rendered.
      */
     void setup_render_state(const ImDrawData* draw_data)
     {
