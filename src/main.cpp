@@ -43,11 +43,11 @@
  * Globals
  */
 std::shared_ptr<dravex::window> g_window;
-int32_t g_selected_asset_index = -1;
+std::shared_ptr<dravex::assets::asset> g_asset;
 bool g_has_pending_asset       = false;
+int32_t g_selected_asset_index = -1;
 int32_t g_pending_asset_type   = -1;
 int32_t g_pending_asset_index  = -1;
-std::shared_ptr<dravex::assets::asset> g_asset;
 
 /**
  * Resets the various asset variables.
@@ -219,7 +219,6 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 9:  // win
         case 17: // dat
         case 21: // (undefined)
-        case 22: // (undefined)
         default:
             g_asset = std::make_shared<dravex::assets::asset_unknown>();
             g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
