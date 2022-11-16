@@ -61,6 +61,10 @@ namespace dravex::assets
             return;
 
         stb_vorbis_get_samples_short_interleaved(vorbis, vorbis->channels, (short*)output, frame_count * vorbis->channels);
+
+        // Stop the player and reset to the start..
+        if (stb_vorbis_get_sample_offset(vorbis) == stb_vorbis_stream_length_in_samples(vorbis))
+            stb_vorbis_seek_start(vorbis);
     }
 
     class asset_ogg final : public asset
@@ -183,20 +187,30 @@ namespace dravex::assets
             ImGui::Separator();
 
             // Display a mini-player
-            if (ImGui::Button(ICON_FA_PLAY "Play", ImVec2(100, 30)))
+            if (ImGui::Button(ICON_FA_PLAY "Play", ImVec2(110, 30)))
                 ma_device_start(&this->madevice_);
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_STOP "Stop", ImVec2(100, 30)))
+            if (ImGui::Button(ICON_FA_STOP "Stop", ImVec2(110, 30)))
                 ma_device_stop(&this->madevice_);
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_RECYCLE "Reset", ImVec2(100, 30)))
+            if (ImGui::Button(ICON_FA_RECYCLE "Reset", ImVec2(110, 30)))
                 stb_vorbis_seek_start(this->vorbis_);
 
             // Display the current and total times..
             const auto curr = get_timestamp(soffset / this->vorbis_->sample_rate);
             const auto full = get_timestamp(lseconds);
 
-            ImGui::Text(std::format("{} / {}", curr, full).c_str());
+            ImGui::PushItemWidth(ImGui::GetFontSize() * -56);
+            ImGui::Text(curr.c_str());
+            ImGui::SameLine();
+
+            int32_t player_offset = soffset;
+            if (ImGui::SliderInt("##ogg_position", &player_offset, 0, lsamples))
+                stb_vorbis_seek(this->vorbis_, player_offset);
+
+            ImGui::SameLine();
+            ImGui::Text(full.c_str());
+            ImGui::PopItemWidth();
         }
     };
 
