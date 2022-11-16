@@ -43,9 +43,14 @@ The following tools are used to make **dravex**:
 
 The following third-party libraries are used to make **dravex**:
 
-  * **ImGui**: https://github.com/ocornut/imgui
-  * **zlib**: https://www.zlib.net/
   * **Direct3D9**: https://learn.microsoft.com/en-us/windows/win32/direct3d9/dx9-graphics
+  * **ImGui**: https://github.com/ocornut/imgui
+    * **imgui_colortexteditor**: https://github.com/BalazsJako/ImGuiColorTextEdit
+    * **imgui_fontawesome**: https://github.com/juliettef/IconFontCppHeaders
+    * **imgui_memoryeditor**: https://github.com/ocornut/imgui_club
+  * **zlib**: https://www.zlib.net/
+  * **miniaudio**: https://miniaud.io/index.html
+  * **stb_vorbis**: https://github.com/nothings/stb
 
 Credits to the following for additional resources:
 
