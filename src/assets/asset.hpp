@@ -37,9 +37,9 @@ namespace dravex::assets
 {
     interface __declspec(novtable) asset
     {
-        virtual bool initialize(IDirect3DDevice9* device, const uint32_t file_type, const std::vector<uint8_t>& data) = 0;
-        virtual void release(void)                                                                                    = 0;
-        virtual void render(void)                                                                                     = 0;
+        virtual bool initialize(IDirect3DDevice9* device, const std::shared_ptr<dravex::fileentry_t>& entry) = 0;
+        virtual void release(void)                                                                           = 0;
+        virtual void render(void)                                                                            = 0;
     };
 
 } // namespace dravex::assets
