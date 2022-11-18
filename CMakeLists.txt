@@ -111,6 +111,8 @@ set(dravex_src
     "src/defines.hpp"
     "src/imgui_dravex.cpp"
     "src/imgui_dravex.hpp"
+    "src/logging.cpp"
+    "src/logging.hpp"
     "src/main.cpp"
     "src/utils.hpp"
     "src/window.cpp"
