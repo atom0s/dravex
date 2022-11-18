@@ -25,6 +25,7 @@
  */
 
 #include "window.hpp"
+#include "logging.hpp"
 #include "../res/dravex.h"
 
 /**
@@ -84,7 +85,10 @@ LRESULT WINAPI dravex::window::on_message(HWND hwnd, UINT msg, WPARAM wparam, LP
         {
             // Initialize Direct3D..
             if ((this->d3d9_ = ::Direct3DCreate9(D3D_SDK_VERSION)) == nullptr)
+            {
+                std::cout << "[!] Error: Failed to create Direct3D9." << std::endl;
                 return -1;
+            }
 
             // Prepare the present parameters..
             std::memset(&this->present_params_, 0x00, sizeof(D3DPRESENT_PARAMETERS));
@@ -105,7 +109,10 @@ LRESULT WINAPI dravex::window::on_message(HWND hwnd, UINT msg, WPARAM wparam, LP
 
             // Create the Direct3D device..
             if (FAILED(this->d3d9_->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hwnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &this->present_params_, &this->d3d9dev_)))
+            {
+                std::cout << "[!] Error: Failed to create Direct3D9 device." << std::endl;
                 return -1;
+            }
 
             break;
         }
@@ -156,12 +163,16 @@ bool dravex::window::initialize(void)
 
     // Register the window class..
     if (!::RegisterClassExA(&wndcls))
+    {
+        std::cout << "[!] Error: Failed to register window class." << std::endl;
         return false;
+    }
 
     // Create the window..
     this->hwnd_ = ::CreateWindowExA(0, "cls_wnddravex", "Dungeon Runners Asset Viewer & Extractor - by atom0s", WS_OVERLAPPEDWINDOW, 100, 100, 1600, 900, nullptr, nullptr, this->instance_, this);
     if (!this->hwnd_)
     {
+        std::cout << "[!] Error: Failed to create application window." << std::endl;
         ::UnregisterClassA("cls_wnddravex", ::GetModuleHandleA(nullptr));
         return false;
     }
@@ -261,6 +272,8 @@ void dravex::window::run()
  */
 bool dravex::window::reset_device(void)
 {
+    dravex::logging::instance().log(dravex::loglevel::debug, "[graphics] graphics device was reset; reinitializing objects..");
+
     // Call reset callback (pre)..
     if (this->on_reset_)
     {
