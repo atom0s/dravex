@@ -47,7 +47,6 @@ std::shared_ptr<dravex::window> g_window;
 std::shared_ptr<dravex::assets::asset> g_asset;
 bool g_has_pending_asset       = false;
 int32_t g_selected_asset_index = -1;
-int32_t g_pending_asset_type   = -1;
 int32_t g_pending_asset_index  = -1;
 
 /**
@@ -57,7 +56,6 @@ void reset_asset_variables(void)
 {
     g_selected_asset_index = -1;
     g_has_pending_asset    = false;
-    g_pending_asset_type   = -1;
     g_pending_asset_index  = -1;
 
     if (g_asset)
@@ -173,30 +171,31 @@ void extract_assets(void)
 }
 
 /**
- * Loads an asset from its file data to be viewed.
- *
- * @param {uint32_t} file_type - The file type of the asset being loaded.
- * @param {std::vector} data - The file data of the asset.
+ * Loads the selected asset to be viewed.
  */
-void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
+void load_selected_asset(void)
 {
-    switch (file_type)
+    const auto& e = dravex::package::instance().get_entry(g_pending_asset_index);
+    if (e == nullptr)
+        return;
+
+    switch (e->file_type_)
     {
         case 0: // tga
         case 1: // bmp
         case 2: // dds
             g_asset = std::make_shared<dravex::assets::asset_texture>();
-            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            g_asset->initialize(g_window->get_d3d9dev(), e);
             break;
 
         case 3: // ttf
             g_asset = std::make_shared<dravex::assets::asset_font>();
-            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            g_asset->initialize(g_window->get_d3d9dev(), e);
             break;
 
         case 8: // ogg
             g_asset = std::make_shared<dravex::assets::asset_ogg>();
-            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            g_asset->initialize(g_window->get_d3d9dev(), e);
             break;
 
         case 10: // msc
@@ -210,7 +209,7 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 19: // cfg
         case 20: // txt
             g_asset = std::make_shared<dravex::assets::asset_text>();
-            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            g_asset->initialize(g_window->get_d3d9dev(), e);
             break;
 
         case 4:  // cobj
@@ -222,7 +221,7 @@ void load_asset(const uint32_t file_type, const std::vector<uint8_t>& data)
         case 21: // (undefined)
         default:
             g_asset = std::make_shared<dravex::assets::asset_unknown>();
-            g_asset->initialize(g_window->get_d3d9dev(), file_type, data);
+            g_asset->initialize(g_window->get_d3d9dev(), e);
             break;
     }
 }
@@ -256,10 +255,8 @@ void render_view_assets(void)
                     reset_asset_variables();
 
                     g_selected_asset_index = x;
-
-                    g_has_pending_asset   = true;
-                    g_pending_asset_type  = e->file_type_;
-                    g_pending_asset_index = x;
+                    g_has_pending_asset    = true;
+                    g_pending_asset_index  = x;
                 }
             }
 
@@ -339,7 +336,7 @@ void __stdcall on_update(void)
     // Load pending asset prior to ImGui frame..
     if (g_has_pending_asset)
     {
-        load_asset(g_pending_asset_type, dravex::package::instance().get_entry_data(g_pending_asset_index));
+        load_selected_asset();
         g_has_pending_asset = false;
     }
 
@@ -404,7 +401,7 @@ void __stdcall on_update(void)
                 if (ImGui::MenuItem(ICON_FA_CIRCLE_INFO "About dravex"))
                 {
                     g_asset = std::make_shared<dravex::assets::asset_splash>();
-                    g_asset->initialize(g_window->get_d3d9dev(), 0, {});
+                    g_asset->initialize(g_window->get_d3d9dev(), nullptr);
                 }
                 ImGui::EndMenu();
             }
@@ -519,7 +516,7 @@ int32_t __cdecl main(int32_t argc, char* argv[])
 
         // Default the initial asset to the splash screen..
         g_asset = std::make_shared<dravex::assets::asset_splash>();
-        g_asset->initialize(g_window->get_d3d9dev(), 0, {});
+        g_asset->initialize(g_window->get_d3d9dev(), nullptr);
 
         // Run the window..
         g_window->run();
