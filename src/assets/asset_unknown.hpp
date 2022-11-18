@@ -64,16 +64,14 @@ namespace dravex::assets
          * Initializes the asset, preparing it for viewing.
          *
          * @param {IDirect3DDevice9*} device - The Direct3D device pointer.
-         * @param {uint32_t} file_type - The asset file type.
-         * @param {std::vector&} data - The asset raw data.
+         * @param {std::shared_ptr&} entry - The asset entry being loaded.
          * @return {bool} True on success, false otherwise.
          */
-        bool initialize(IDirect3DDevice9* device, const uint32_t file_type, const std::vector<uint8_t>& data)
+        bool initialize(IDirect3DDevice9* device, const std::shared_ptr<dravex::fileentry_t>& entry)
         {
             this->device_ = device;
             this->device_->AddRef();
-            this->file_type_ = file_type;
-            this->data_      = data;
+            this->data_ = dravex::package::instance().get_entry_data(entry->index_);
 
             // Convert the incoming data to chars..
             std::vector<char> str(this->data_.begin(), this->data_.end());

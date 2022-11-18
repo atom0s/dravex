@@ -38,7 +38,6 @@ namespace dravex::assets
     class asset_texture final : public asset
     {
         IDirect3DDevice9* device_;
-        uint32_t file_type_;
         IDirect3DTexture9* texture_;
         D3DSURFACE_DESC desc_;
         ImVec4 color_;
@@ -50,7 +49,6 @@ namespace dravex::assets
          */
         asset_texture(void)
             : device_{nullptr}
-            , file_type_{0}
             , texture_{nullptr}
             , desc_{}
             , color_{1.0f, 1.0f, 1.0f, 1.0f}
@@ -65,15 +63,15 @@ namespace dravex::assets
          * Initializes the asset, preparing it for viewing.
          *
          * @param {IDirect3DDevice9*} device - The Direct3D device pointer.
-         * @param {uint32_t} file_type - The asset file type.
-         * @param {std::vector&} data - The asset raw data.
+         * @param {std::shared_ptr&} entry - The asset entry being loaded.
          * @return {bool} True on success, false otherwise.
          */
-        bool initialize(IDirect3DDevice9* device, const uint32_t file_type, const std::vector<uint8_t>& data)
+        bool initialize(IDirect3DDevice9* device, const std::shared_ptr<dravex::fileentry_t>& entry)
         {
             this->device_ = device;
             this->device_->AddRef();
-            this->file_type_ = file_type;
+
+            const auto data = dravex::package::instance().get_entry_data(entry->index_);
 
             // Load the texture from the asset data..
             if (FAILED(::D3DXCreateTextureFromFileInMemory(device, data.data(), data.size(), &this->texture_)))

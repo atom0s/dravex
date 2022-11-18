@@ -70,7 +70,6 @@ namespace dravex::assets
     class asset_ogg final : public asset
     {
         IDirect3DDevice9* device_;
-        uint32_t file_type_;
         std::vector<uint8_t> data_;
         stb_vorbis* vorbis_;
         ma_device madevice_;
@@ -81,7 +80,6 @@ namespace dravex::assets
          */
         asset_ogg(void)
             : device_{nullptr}
-            , file_type_{0}
             , vorbis_{nullptr}
             , madevice_{}
         {}
@@ -94,16 +92,14 @@ namespace dravex::assets
          * Initializes the asset, preparing it for viewing.
          *
          * @param {IDirect3DDevice9*} device - The Direct3D device pointer.
-         * @param {uint32_t} file_type - The asset file type.
-         * @param {std::vector&} data - The asset raw data.
+         * @param {std::shared_ptr&} entry - The asset entry being loaded.
          * @return {bool} True on success, false otherwise.
          */
-        bool initialize(IDirect3DDevice9* device, const uint32_t file_type, const std::vector<uint8_t>& data)
+        bool initialize(IDirect3DDevice9* device, const std::shared_ptr<dravex::fileentry_t>& entry)
         {
             this->device_ = device;
             this->device_->AddRef();
-            this->file_type_ = file_type;
-            this->data_      = data;
+            this->data_ = dravex::package::instance().get_entry_data(entry->index_);
 
             // Load the vorbis file from memory..
             this->vorbis_ = stb_vorbis_open_memory(this->data_.data(), this->data_.size(), nullptr, nullptr);

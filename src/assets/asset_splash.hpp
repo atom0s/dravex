@@ -39,7 +39,6 @@ namespace dravex::assets
     class asset_splash final : public asset
     {
         IDirect3DDevice9* device_;
-        uint32_t file_type_;
         IDirect3DTexture9* texture_;
         D3DSURFACE_DESC desc_;
 
@@ -49,7 +48,6 @@ namespace dravex::assets
          */
         asset_splash(void)
             : device_{nullptr}
-            , file_type_{0}
             , texture_{nullptr}
             , desc_{}
         {}
@@ -62,15 +60,13 @@ namespace dravex::assets
          * Initializes the asset, preparing it for viewing.
          *
          * @param {IDirect3DDevice9*} device - The Direct3D device pointer.
-         * @param {uint32_t} file_type - The asset file type.
-         * @param {std::vector&} data - The asset raw data.
+         * @param {std::shared_ptr&} entry - The asset entry being loaded.
          * @return {bool} True on success, false otherwise.
          */
-        bool initialize(IDirect3DDevice9* device, const uint32_t file_type, const std::vector<uint8_t>& data)
+        bool initialize(IDirect3DDevice9* device, const std::shared_ptr<dravex::fileentry_t>& entry)
         {
             this->device_ = device;
             this->device_->AddRef();
-            this->file_type_ = file_type;
 
             if (FAILED(::D3DXCreateTextureFromResourceExA(device, ::GetModuleHandleA(nullptr), MAKEINTRESOURCE(IDI_APPIMAGE), D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_FILTER_NONE, D3DX_FILTER_NONE, 0, nullptr, nullptr, &this->texture_)))
             {
