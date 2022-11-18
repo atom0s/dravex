@@ -108,7 +108,10 @@ namespace dravex::assets
             // Load the vorbis file from memory..
             this->vorbis_ = stb_vorbis_open_memory(this->data_.data(), this->data_.size(), nullptr, nullptr);
             if (this->vorbis_ == nullptr)
+            {
+                dravex::logging::instance().log(dravex::loglevel::error, "[asset::ogg] failed to initialize vorbis decoder..");
                 return false;
+            }
 
             // Obtain the audio information..
             const auto info = stb_vorbis_get_info(this->vorbis_);
@@ -125,6 +128,8 @@ namespace dravex::assets
             // Initialize the device..
             if (ma_device_init(nullptr, &cfg, &this->madevice_) != MA_SUCCESS)
             {
+                dravex::logging::instance().log(dravex::loglevel::error, "[asset::ogg] failed to initialize miniaudio device..");
+
                 stb_vorbis_close(this->vorbis_);
                 return false;
             }

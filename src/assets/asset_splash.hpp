@@ -73,9 +73,15 @@ namespace dravex::assets
             this->file_type_ = file_type;
 
             if (FAILED(::D3DXCreateTextureFromResourceExA(device, ::GetModuleHandleA(nullptr), MAKEINTRESOURCE(IDI_APPIMAGE), D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_FILTER_NONE, D3DX_FILTER_NONE, 0, nullptr, nullptr, &this->texture_)))
+            {
+                dravex::logging::instance().log(dravex::loglevel::error, "[asset::splash] failed to create application image texture..");
                 return false;
+            }
             if (FAILED(this->texture_->GetLevelDesc(0, &this->desc_)))
+            {
+                dravex::logging::instance().log(dravex::loglevel::error, "[asset::splash] failed to obtain application image texture information..");
                 return false;
+            }
 
             return true;
         }

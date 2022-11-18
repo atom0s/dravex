@@ -77,9 +77,15 @@ namespace dravex::assets
 
             // Load the texture from the asset data..
             if (FAILED(::D3DXCreateTextureFromFileInMemory(device, data.data(), data.size(), &this->texture_)))
+            {
+                dravex::logging::instance().log(dravex::loglevel::error, "[asset::texture] failed to create texture..");
                 return false;
+            }
             if (FAILED(this->texture_->GetLevelDesc(0, &this->desc_)))
+            {
+                dravex::logging::instance().log(dravex::loglevel::error, "[asset::texture] failed to obtain texture information..");
                 return false;
+            }
 
             return true;
         }
