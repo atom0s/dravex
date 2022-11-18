@@ -27,6 +27,7 @@
 #include "package.hpp"
 #include "v118.hpp"
 #include "v666.hpp"
+#include "../logging.hpp"
 #include "../utils.hpp"
 
 /**
@@ -46,6 +47,8 @@ dravex::package::~package(void)
  */
 bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
 {
+    dravex::logging::instance().log(dravex::loglevel::info, "[parse] detected 'v118' client archive..");
+
     // Read the header information..
     const auto version             = buffer->read<uint32_t>();
     this->guid_                    = buffer->read<std::vector<uint8_t>>(16);
@@ -54,15 +57,22 @@ bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
     const auto string_table_size   = buffer->read<uint32_t>();
     const auto string_table_offset = buffer->read<uint32_t>();
 
+    dravex::logging::instance().log(dravex::loglevel::info, std::format("[parse]   -> entry count: {}", entry_count).c_str());
+
     // Open the data file for reading..
     FILE* f = nullptr;
     if (::fopen_s(&this->pkg_file_, this->pkg_path_.string().c_str(), "rb") != ERROR_SUCCESS)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] failed to open 'game.pkg' for reading; cannot continue..");
         return false;
+    }
 
     // Read and validate the game.pkg file GUID..
     uint8_t data_guid[16]{};
     if (::fread(data_guid, 1, 16, this->pkg_file_) != 16 || std::memcmp(this->guid_.data(), data_guid, 16) != 0)
     {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] failed to validate 'game.pkg' guid; cannot continue..");
+
         ::fclose(this->pkg_file_);
         return false;
     }
@@ -78,7 +88,10 @@ bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
     // Parse the string table..
     dravex::utils::parse_strings(string_table_data, this->strings_);
     if (this->strings_.size() != entry_count)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, std::format("[parse] invalid string count; cannot continue - got: {}, expected: {}", this->strings_.size(), entry_count).c_str());
         return false;
+    }
 
     // Convert the entries into generalized type..
     for (auto x = 0; x < entry_count; x++)
@@ -107,6 +120,8 @@ bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
  */
 bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
 {
+    dravex::logging::instance().log(dravex::loglevel::info, "[parse] detected 'v666' client archive..");
+
     // Read the uncompressed header information..
     const auto version1 = buffer->read<uint32_t>();
     const auto version2 = buffer->read<uint32_t>();
@@ -115,12 +130,17 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
     // Open the data file for reading..
     FILE* f = nullptr;
     if (::fopen_s(&this->pkg_file_, this->pkg_path_.string().c_str(), "rb") != ERROR_SUCCESS)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] failed to open 'game.pkg' for reading; cannot continue..");
         return false;
+    }
 
     // Read and validate the game.pkg file GUID..
     uint8_t data_guid[16]{};
     if (::fread(data_guid, 1, 16, this->pkg_file_) != 16 || std::memcmp(this->guid_.data(), data_guid, 16) != 0)
     {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] failed to validate 'game.pkg' guid; cannot continue..");
+
         ::fclose(this->pkg_file_);
         return false;
     }
@@ -128,7 +148,10 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
     // Decompress the remaining index data..
     std::vector<uint8_t> data_decompressed;
     if (!dravex::utils::inflate(buffer->data(), buffer->size(), buffer->index(), data_decompressed))
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] failed to inflate remaining index data; cannot continue..");
         return false;
+    }
 
     // Set the binary buffer to the decompressed data..
     buffer = std::make_shared<dravex::binarybuffer>(data_decompressed.data(), data_decompressed.size());
@@ -141,6 +164,8 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
     // Calculate the total entry count..
     const auto entry_count = std::reduce(blocks.begin(), blocks.end());
 
+    dravex::logging::instance().log(dravex::loglevel::info, std::format("[parse]   -> entry count: {}", entry_count).c_str());
+
     // Read the file entries..
     const auto entries = buffer->read<std::vector<v666::diskpkgfileinfo_t>>(entry_count);
 
@@ -151,7 +176,10 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
     // Parse the string table..
     dravex::utils::parse_strings(string_table_data, this->strings_);
     if (this->strings_.size() != entry_count)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, std::format("[parse] invalid string count; cannot continue - got: {}, expected: {}", this->strings_.size(), entry_count).c_str());
         return false;
+    }
 
     /**
      * Returns the file type for the given file index.
@@ -221,27 +249,35 @@ bool dravex::package::open(const std::string& path)
 {
     this->close();
 
-    std::error_code ec;
-    if (!std::filesystem::exists(path, ec) || ec)
-        return false;
-
+    std::error_code ec{};
     std::filesystem::path pki_path = path;
     if (!std::filesystem::exists(pki_path, ec) || ec)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] invalid 'game.pki' path; cannot continue..");
         return false;
+    }
 
     std::filesystem::path pkg_path = pki_path.parent_path();
     pkg_path /= "game.pkg";
 
     if (!std::filesystem::exists(pkg_path, ec) || ec)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] invalid 'game.pkg' path; cannot continue..");
         return false;
+    }
 
     this->pki_path_ = pki_path;
     this->pkg_path_ = pkg_path;
 
+    dravex::logging::instance().log(dravex::loglevel::info, std::format("[parse] opening archive for parsing: {}", this->pki_path_.string()).c_str());
+
     // Open the index file for reading..
     FILE* f = nullptr;
     if (::fopen_s(&f, pki_path.string().c_str(), "rb") != ERROR_SUCCESS)
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, "[parse] failed to open 'game.pki' for reading; cannot continue..");
         return false;
+    }
 
     // Obtain the index file size..
     ::fseek(f, 0, SEEK_END);
@@ -257,7 +293,8 @@ bool dravex::package::open(const std::string& path)
     auto buffer = std::make_shared<dravex::binarybuffer>(data.data(), data.size());
 
     // Handle the file based on the version..
-    switch (buffer->read<uint32_t>())
+    const auto version = buffer->read<uint32_t>();
+    switch (version)
     {
         case 2: // Client Version: v118
             buffer->reset();
@@ -270,6 +307,8 @@ bool dravex::package::open(const std::string& path)
         default:
             break;
     }
+
+    dravex::logging::instance().log(dravex::loglevel::error, std::format("[parse] unsupported 'game.pki' version, cannot parse.. - version: {}", version).c_str());
 
     return false;
 }
@@ -341,7 +380,10 @@ std::vector<uint8_t> dravex::package::get_entry_data(const int32_t index)
     // Inflate the data via zlib..
     std::vector<uint8_t> data_decompressed;
     if (!dravex::utils::inflate(data.data(), data.size(), 0, data_decompressed))
+    {
+        dravex::logging::instance().log(dravex::loglevel::error, std::format("[parse] failed to inflate compressed entry data, entry index: {}", index).c_str());
         return {};
+    }
 
     return data_decompressed;
 }
