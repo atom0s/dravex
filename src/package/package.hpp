@@ -45,6 +45,7 @@ namespace dravex
 
     struct fileentry_t
     {
+        uint32_t index_;
         uint32_t file_type_;
         uint32_t string_offset_;
         uint32_t data_offset_;

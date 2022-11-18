@@ -98,6 +98,7 @@ bool dravex::package::parse_v118(std::shared_ptr<dravex::binarybuffer> buffer)
     {
         const auto& e           = entries[x];
         auto obj                = std::make_shared<dravex::fileentry_t>();
+        obj->index_             = x;
         obj->file_type_         = static_cast<uint32_t>(e.flags_) & 0x3F;
         obj->string_offset_     = e.string_offset_;
         obj->data_offset_       = e.data_offset_;
@@ -201,6 +202,7 @@ bool dravex::package::parse_v666(std::shared_ptr<dravex::binarybuffer> buffer)
     {
         const auto& e           = entries[x];
         auto obj                = std::make_shared<dravex::fileentry_t>();
+        obj->index_             = x;
         obj->file_type_         = get_file_type(x);
         obj->string_offset_     = e.string_offset_;
         obj->data_offset_       = e.data_offset_;
