@@ -29,6 +29,7 @@
 #include "imgui_dravex.hpp"
 #include "imgui_fontawesome.hpp"
 #include "imgui_fontawesome_brands.hpp"
+#include "logging.hpp"
 #include "package/package.hpp"
 #include "window.hpp"
 
@@ -292,6 +293,7 @@ void render_view_assets(void)
  */
 void render_view_logging(void)
 {
+    dravex::logging::instance().render();
 }
 
 /**
@@ -433,7 +435,7 @@ void __stdcall on_update(void)
 
             auto dock_loc_main = dock_id;
             auto dock_loc_left = ImGui::DockBuilderSplitNode(dock_loc_main, ImGuiDir_Left, 0.20f, nullptr, &dock_loc_main);
-            auto dock_loc_down = ImGui::DockBuilderSplitNode(dock_loc_main, ImGuiDir_Down, 0.20f, nullptr, &dock_loc_main);
+            auto dock_loc_down = ImGui::DockBuilderSplitNode(dock_loc_main, ImGuiDir_Down, 0.21f, nullptr, &dock_loc_main);
 
             ImGui::DockBuilderDockWindow("###view_assets", dock_loc_left);
             ImGui::DockBuilderDockWindow("###view_main", dock_loc_main);
@@ -455,9 +457,11 @@ void __stdcall on_update(void)
         ImGui::End();
 
         // Render the logging view..
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::Begin(ICON_FA_LIST "Log###view_log");
         render_view_logging();
         ImGui::End();
+        ImGui::PopStyleVar();
     }
     dravex::imguimgr::instance().endscene();
 }
@@ -478,12 +482,17 @@ int32_t __cdecl main(int32_t argc, char* argv[])
               << "Discord: https://discord.gg/UmXNvjq"
               << std::endl
               << std::endl;
-    std::cout << "Support Me via Donations:" << std::endl;
-    std::cout << "  >> PayPal : https://paypal.me/atom0s" << std::endl;
-    std::cout << "  >> Patreon: https://patreon.com/atom0s" << std::endl;
-    std::cout << "  >> GitHub : https://github.com/sponsors/atom0s"
+    std::cout << "Support Me via Donations:"
+              << std::endl
+              << "  >> PayPal : https://paypal.me/atom0s"
+              << std::endl
+              << "  >> Patreon: https://patreon.com/atom0s"
+              << std::endl
+              << "  >> GitHub : https://github.com/sponsors/atom0s"
               << std::endl
               << std::endl;
+
+    dravex::logging::instance().log(dravex::loglevel::info, "[info] dravex - Dungeon Runners Asset Viewer & Extractor - (c) 2022 atom0s [atom0s@live.com]");
 
     /**
      * Runs the application.
@@ -503,7 +512,10 @@ int32_t __cdecl main(int32_t argc, char* argv[])
 
         // Initialize ImGui..
         if (!dravex::imguimgr::instance().initialize(g_window->get_hwnd(), g_window->get_d3d9dev()))
+        {
+            std::cout << "[!] Error: Failed to initialize ImGui." << std::endl;
             return false;
+        }
 
         // Default the initial asset to the splash screen..
         g_asset = std::make_shared<dravex::assets::asset_splash>();
