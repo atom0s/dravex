@@ -351,7 +351,7 @@ std::size_t dravex::package::get_entry_count(void)
  */
 std::shared_ptr<dravex::fileentry_t> dravex::package::get_entry(const int32_t index)
 {
-    return (this->entries_.size() == 0 || index > this->entries_.size() || index == -1)
+    return (this->entries_.size() == 0 || index >= this->entries_.size() || index == -1)
                ? nullptr
                : this->entries_[index];
 }
@@ -364,7 +364,7 @@ std::shared_ptr<dravex::fileentry_t> dravex::package::get_entry(const int32_t in
  */
 std::vector<uint8_t> dravex::package::get_entry_data(const int32_t index)
 {
-    if (this->entries_.size() == 0 || index > this->entries_.size() || index == -1)
+    if (this->entries_.size() == 0 || index >= this->entries_.size() || index == -1)
         return {};
 
     const auto e = this->entries_[index];
