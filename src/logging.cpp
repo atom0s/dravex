@@ -67,6 +67,8 @@ void dravex::logging::clear(void)
  */
 void dravex::logging::log(const dravex::loglevel level, const std::string& message)
 {
+    std::lock_guard<std::mutex> lock{this->mutex_};
+
     // Add the message to the log..
     this->log_.push_back(std::make_tuple(level, message));
 

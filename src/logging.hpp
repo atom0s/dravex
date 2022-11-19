@@ -55,6 +55,7 @@ namespace dravex
         logging(void);
         ~logging(void);
 
+        mutable std::mutex mutex_;
         std::vector<std::tuple<dravex::loglevel, std::string>> log_;
         bool autoscroll_;
         bool autoscroll_new_entries_;
