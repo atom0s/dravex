@@ -50,6 +50,14 @@ int32_t g_selected_asset_index = -1;
 int32_t g_pending_asset_index  = -1;
 
 /**
+ * Globals (Extraction Overlay)
+ */
+int32_t g_extract_modal_index              = 0;
+std::filesystem::path g_extract_modal_path = "";
+bool g_extract_modal_show                  = false;
+std::thread g_extract_modal_thread;
+
+/**
  * Resets the various asset variables.
  */
 void reset_asset_variables(void)
@@ -107,6 +115,8 @@ void extract_asset(void)
             ::fwrite(data.data(), data.size(), 1, f);
             ::fclose(f);
         }
+        else
+            dravex::logging::instance().log(dravex::loglevel::error, std::format("[extract] failed to extract asset to path: {}", file_name));
     }
 }
 
@@ -121,6 +131,7 @@ void extract_assets(void)
     binfo.hwndOwner      = g_window->get_hwnd();
     binfo.pszDisplayName = file_path;
     binfo.iImage         = -1;
+    binfo.ulFlags        = BIF_NEWDIALOGSTYLE;
 
     // Display the folder selection dialog..
     const auto ret = ::SHBrowseForFolderA(&binfo);
@@ -139,34 +150,109 @@ void extract_assets(void)
     if (!std::filesystem::exists(root, ec))
         std::filesystem::create_directories(root, ec);
 
-    // Extract each asset..
-    const auto entry_count = dravex::package::instance().get_entry_count();
-    for (auto x = 0; x < entry_count; x++)
-    {
-        // Obtain the asset entry information..
-        const auto& entry = dravex::package::instance().get_entry(x);
-        if (entry == nullptr)
-            continue;
+    // Mark the extraction overlay to display..
+    g_extract_modal_index = 0;
+    g_extract_modal_path  = root;
+    g_extract_modal_show  = true;
 
-        const auto& data = dravex::package::instance().get_entry_data(x);
-        const auto& name = dravex::package::instance().get_string(entry->string_offset_);
-        auto ext         = dravex::package::instance().get_extension(entry->file_type_);
+    // Start the extract thread..
+    g_extract_modal_thread = std::thread([]() {
+        std::vector<int32_t> failed_index;
+        std::vector<std::filesystem::path> failed_paths;
 
-        // Prepare the full path to the file..
-        auto fpath = root;
-        fpath /= std::format("{}{}", name, ext);
-
-        // Ensure the path to the file exists..
-        if (!std::filesystem::exists(fpath.parent_path(), ec))
-            std::filesystem::create_directories(fpath.parent_path(), ec);
-
-        // Save the asset..
-        FILE* f = nullptr;
-        if (::fopen_s(&f, fpath.string().c_str(), "wb") == ERROR_SUCCESS)
+        while (g_extract_modal_show)
         {
-            ::fwrite(data.data(), data.size(), 1, f);
-            ::fclose(f);
+            if (g_extract_modal_index >= dravex::package::instance().get_entry_count())
+                break;
+
+            // Obtain the asset entry information..
+            const auto& entry = dravex::package::instance().get_entry(g_extract_modal_index);
+            if (entry == nullptr)
+            {
+                failed_index.push_back(g_extract_modal_index);
+
+                g_extract_modal_index++;
+                continue;
+            }
+
+            // Obtain the entry information..
+            const auto& data = dravex::package::instance().get_entry_data(g_extract_modal_index);
+            const auto& name = dravex::package::instance().get_string(entry->string_offset_);
+            auto ext         = dravex::package::instance().get_extension(entry->file_type_);
+
+            std::error_code ec{};
+
+            // Prepare the full path to the file..
+            auto fpath = g_extract_modal_path;
+            fpath /= std::format("{}{}", name, ext);
+
+            // Ensure the path to the file exists..
+            if (!std::filesystem::exists(fpath.parent_path(), ec))
+                std::filesystem::create_directories(fpath.parent_path(), ec);
+
+            // Save the asset..
+            FILE* f = nullptr;
+            if (::fopen_s(&f, fpath.string().c_str(), "wb") == ERROR_SUCCESS)
+            {
+                ::fwrite(data.data(), data.size(), 1, f);
+                ::fclose(f);
+            }
+            else
+                failed_paths.push_back(fpath);
+
+            // Step to the next asset..
+            g_extract_modal_index++;
         }
+
+        dravex::logging::instance().log(dravex::loglevel::info, "[extract] extract all assets completed.");
+
+        if (failed_index.size() > 0)
+        {
+            for (const auto& i : failed_index)
+                dravex::logging::instance().log(dravex::loglevel::error, std::format("[extract] failed to extract asset at index: {}", i));
+        }
+
+        if (failed_paths.size() > 0)
+        {
+            for (const auto& p : failed_paths)
+                dravex::logging::instance().log(dravex::loglevel::error, std::format("[extract] failed to extract asset to path: {}", p.string()));
+        }
+    });
+}
+
+/**
+ * Displays the asset extraction overlay.
+ */
+void extract_assets_overlay(void)
+{
+    if (g_extract_modal_show)
+        ImGui::OpenPopup("###dravex_extract_overlay");
+
+    const auto size   = ImGui::GetIO().DisplaySize;
+    const auto center = ImVec2(size.x * 0.5f, size.y * 0.5f);
+
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(-1, -1), ImGuiCond_Always);
+
+    if (ImGui::BeginPopupModal("Extracting..###dravex_extract_overlay", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        const auto entry_count = dravex::package::instance().get_entry_count();
+
+        ImGui::Text(std::format("Extracting asset {} of {}..", g_extract_modal_index, entry_count).c_str());
+        ImGui::ProgressBar(static_cast<float>(g_extract_modal_index) / static_cast<float>(entry_count));
+        ImGui::Separator();
+
+        if (ImGui::Button("Cancel") || g_extract_modal_index >= entry_count)
+        {
+            g_extract_modal_index = 0;
+            g_extract_modal_path  = "";
+            g_extract_modal_show  = false;
+            g_extract_modal_thread.join();
+
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
     }
 }
 
@@ -409,6 +495,9 @@ void __stdcall on_update(void)
             ImGui::EndMainMenuBar();
         }
 
+        // Display extraction overlay..
+        extract_assets_overlay();
+
         // Prepare the dockspace..
         auto dock_window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
         dock_window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
@@ -526,6 +615,13 @@ int32_t __cdecl main(int32_t argc, char* argv[])
 
     // Run the application..
     const auto ret = run_application();
+
+    // Stop the extraction thread if running..
+    if (g_extract_modal_show || g_extract_modal_thread.joinable())
+    {
+        g_extract_modal_show = false;
+        g_extract_modal_thread.join();
+    }
 
     // Cleanup..
     dravex::imguimgr::instance().release();
